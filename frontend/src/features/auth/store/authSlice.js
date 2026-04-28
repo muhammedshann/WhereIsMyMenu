@@ -28,12 +28,24 @@ export const loginUser = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (credentials, thunkAPI) => {
+  async (_, thunkAPI) => {
     try {
-      const response = await api.get("/users/logout/", credentials);
+      const response = await api.get("/users/logout/");
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || { detail: "Invalid credentials" });
+      return thunkAPI.rejectWithValue(error.response?.data || { detail: "Something went wrong" });
+    }
+  }
+);
+
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, thunkAPI) => {
+    try {
+      const response = await api.get("/users/me/");
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || { detail: "Something went wrong" });
     }
   }
 );
@@ -85,7 +97,21 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      // Fetch current user
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.user = null; // Clear user if fetch fails
+      })
   }
 });
 

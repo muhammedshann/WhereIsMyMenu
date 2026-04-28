@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/api'; 
 import { Loader2 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { logoutUser } from '../features/auth/store/authSlice';
+import { logoutUser, fetchCurrentUser } from '../features/auth/store/authSlice';
 
 const AuthContext = createContext();
 
@@ -16,9 +16,9 @@ export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUser = () => {
       try {
-        const response = await api.get('/users/me/');
+        const response = dispatch(fetchCurrentUser());
         const userData = response.data.user || response.data;
         setUser(userData);
       } catch (error) {
