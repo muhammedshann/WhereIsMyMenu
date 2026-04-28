@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 
+import dj_database_url
+
 import os
 from dotenv import load_dotenv
 
@@ -85,14 +87,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME"),
-        'USER': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    "default": dj_database_url.parse(os.getenv("DATABASE_URL"))
 }
 
 
