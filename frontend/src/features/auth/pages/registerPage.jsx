@@ -7,7 +7,8 @@ import { registerUser, resetAuthState } from '../store/authSlice';
 const RegisterPage = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { loading, error, success } = useSelector((state) => state.auth);
+    const { error, success } = useSelector((state) => state.auth);
+    const [isRegistering, setIsRegistering] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -51,7 +52,14 @@ const RegisterPage = () => {
             return;
         }
 
-        dispatch(registerUser(formData));
+        setIsRegistering(true);
+        try {
+            await dispatch(registerUser(formData)).unwrap();
+        } catch (err) {
+            // Error is handled by Redux state, we just need to catch to avoid unhandled promise rejection
+        } finally {
+            setIsRegistering(false);
+        }
     };
 
     // Helper to get error message for a field
@@ -76,7 +84,7 @@ const RegisterPage = () => {
 
                 <div className="bg-white/70 backdrop-blur-xl border border-white/60 p-7 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        
+
                         {/* Global Error Message */}
                         {error && error.detail && (
                             <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold">
@@ -179,10 +187,10 @@ const RegisterPage = () => {
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={isRegistering}
                                 className="group relative w-full flex items-center justify-center py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-orange-600 hover:bg-orange-500 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
                             >
-                                {loading ? (
+                                {isRegistering ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
                                     <>

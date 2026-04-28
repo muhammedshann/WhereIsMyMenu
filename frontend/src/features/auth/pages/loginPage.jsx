@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ChefHat, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ChefHat, ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../store/authSlice';
 import { useAuth } from '../../../context/AuthContext';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ identifier: '', password: '' });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { error } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loginContext } = useAuth();
@@ -18,13 +20,20 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await dispatch(loginUser(formData));
-    console.log('Login attempt', response);
-    
-    // Once successfully logged in via Redux, store the authenticated user in our Context
-    if (response.payload && response.payload.user) {
-        loginContext(response.payload.user);
-        navigate('/dashboard');
+    setIsLoggingIn(true);
+    try {
+        const response = await dispatch(loginUser(formData)).unwrap();
+        console.log('Login attempt', response);
+        
+        // Once successfully logged in via Redux, store the authenticated user in our Context
+        if (response && response.user) {
+            loginContext(response.user);
+            navigate('/dashboard');
+        }
+    } catch (err) {
+        // Error is caught by Redux and stored in auth state
+    } finally {
+        setIsLoggingIn(false);
     }
   };
 
@@ -45,6 +54,13 @@ const LoginPage = () => {
 
         <div className="bg-white/70 backdrop-blur-xl border border-white/60 p-7 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
           <form onSubmit={handleSubmit} className="space-y-4">
+          
+            {/* Global Error Message */}
+            {error && error.detail && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold">
+                    {error.detail}
+                </div>
+            )}
 
             {/* Interactive Floating Label Input */}
             <div className="relative group">
@@ -102,10 +118,17 @@ const LoginPage = () => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="group relative w-full flex items-center justify-center py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-orange-600 hover:bg-orange-500 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98]"
+                disabled={isLoggingIn}
+                className="group relative w-full flex items-center justify-center py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-orange-600 hover:bg-orange-500 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                Sign In
-                <ArrowRight size={16} className="ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+                {isLoggingIn ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                    <>
+                        Sign In
+                        <ArrowRight size={16} className="ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+                    </>
+                )}
               </button>
             </div>
           </form>
