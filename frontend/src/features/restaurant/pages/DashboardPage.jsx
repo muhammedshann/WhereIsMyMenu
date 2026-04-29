@@ -733,7 +733,10 @@ export default function DashboardPage() {
               <button onClick={handleCopy} className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-500 px-2.5 py-1.5 rounded-xl transition-colors">
                 <Copy size={10} /> {copied ? 'Copied!' : 'Copy'}
               </button>
-              <button className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-[10px] font-bold text-white px-2.5 py-1.5 rounded-xl transition-colors">
+              <button
+                onClick={() => window.open(restaurant.menuUrl, "_blank")}
+                className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-[10px] font-bold text-white px-2.5 py-1.5 rounded-xl transition-colors"
+              >
                 <ExternalLink size={10} /> Open
               </button>
             </div>

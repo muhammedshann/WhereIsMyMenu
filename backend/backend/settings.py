@@ -211,4 +211,4 @@ cloudinary.config(
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
-print("DEFAULT FILE STORAGE:", DEFAULT_FILE_STORAGE)
+FRONTEND_URL = os.getenv("FRONTEND_URL")

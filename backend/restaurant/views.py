@@ -413,7 +413,7 @@ class RestaurantDashboardView(APIView):
         return Response({
             'restaurant': {
                 'id': restaurant.id, 'name': restaurant.name, 'tagline': restaurant.tagline,
-                'slug': restaurant.slug, 'menuUrl': f"whereismymenu.com/{restaurant.slug}",
+                'slug': restaurant.slug, 'menuUrl': f"{settings.FRONTEND_URL}{restaurant.slug}",
                 'setupComplete': _is_setup_complete(restaurant),
                 'isSubscribed': True,
                 'subscription': {

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+from django.conf import settings
 
 import qrcode
 from io import BytesIO
@@ -41,7 +42,7 @@ class Restaurant(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        url = f"http://localhost:5173/{self.slug}"
+        url = settings.FRONTEND_URL + self.slug
 
         qr = qrcode.make(url)
 
