@@ -60,31 +60,41 @@ export default function AdminPlans() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+
     if (!form.name || !form.price || !form.duration_days) return;
 
     setIsSubmitting(true);
+
     try {
-      // Split features by comma, trim whitespace, and remove empty strings
-      const featuresArray = form.features
+        const featuresArray = form.features
         .split(",")
         .map(f => f.trim())
         .filter(f => f.length > 0);
 
-      await api.post("/admin/plans/", {
-        ...form,
-        features: featuresArray,
-      });
-      
-      await fetchPlans();
-      // Reset and close form
-      setForm({ name: "", price: "", duration_days: "", features: "" });
-      setShowForm(false);
+        await api.post("/admin/plans/", {
+        name: form.name,
+        price: Number(form.price),              // ✅ FIX
+        duration_days: Number(form.duration_days), // ✅ FIX
+        features: featuresArray                 // ✅ correct
+        });
+
+        await fetchPlans();
+
+        setForm({
+        name: "",
+        price: "",
+        duration_days: "",
+        features: ""
+        });
+
+        setShowForm(false);
+
     } catch (err) {
-      console.error("Error creating plan:", err);
+        console.error("Error creating plan:", err);
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+    };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this plan?")) return;
