@@ -1,11 +1,19 @@
 import os
+import django
+
+# ✅ SET THIS CORRECTLY (VERY IMPORTANT)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
+
+# ✅ INIT DJANGO
+django.setup()
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
-email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
-password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
 
 if username and email and password:
     if not User.objects.filter(username=username).exists():
@@ -16,6 +24,6 @@ if username and email and password:
             password=password
         )
     else:
-        print("Superuser already exists.")
+        print("Superuser already exists")
 else:
-    print("Superuser environment variables not set.")
+    print("Missing environment variables")
