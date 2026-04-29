@@ -10,7 +10,7 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.is_superuser && !user.is_staff) {
+  if (!user.is_superuser) {
     return <Navigate to="/dashboard" replace />;
   }
 
