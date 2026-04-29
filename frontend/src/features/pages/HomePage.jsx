@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 import {
   QrCode, RefreshCw, ChefHat, ArrowRight, Globe,
   CheckCircle2, Star, Zap, Share2, Menu, X,
@@ -149,6 +150,8 @@ const HomePage = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const { user } = useAuth();
+
   // Monitor scroll for navbar styling
   useEffect(() => {
     const handleScroll = () => {
@@ -193,10 +196,14 @@ const HomePage = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="hidden md:flex items-center gap-4"
           >
-            <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Log in</Link>
-            <Link to="/register" className="text-sm font-bold bg-slate-900 text-white hover:bg-orange-500 px-6 py-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-md">
-              Start Free Trial
-            </Link>
+            {!user && (
+              <>
+                <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Log in</Link>
+                <Link to="/register" className="text-sm font-bold bg-slate-900 text-white hover:bg-orange-500 px-6 py-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-md">
+                  Start Free Trial
+                </Link>
+              </>
+            )}
           </motion.div>
 
           <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-slate-900">

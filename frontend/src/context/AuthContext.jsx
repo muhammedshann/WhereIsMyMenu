@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const fetchUser = () => {
+    const fetchUser = async () => {
       try {
-        const response = dispatch(fetchCurrentUser());
-        const userData = response.data.user || response.data;
+        const response = await dispatch(fetchCurrentUser()).unwrap();
+        const userData = response.user || response;
         setUser(userData);
       } catch (error) {
         setUser(null);
@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
     setUser,
     loginContext,
     logoutContext,
+    loading,
   };
 
   if (loading) {

@@ -463,7 +463,11 @@ export default function DashboardPage() {
       setSteps(d.setupSteps);
       setItemStatuses(Object.fromEntries(d.items.map(i => [i.id, i.status])));
     } catch (err) {
-      setError('Failed to load dashboard.');
+      if (err.response?.status === 404) {
+        navigate('/restaurant/setup');
+      } else {
+        setError('Failed to load dashboard.');
+      }
     } finally {
       setLoading(false);
     }
