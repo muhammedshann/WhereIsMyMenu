@@ -5,6 +5,7 @@ import {
   MapPin, Clock, Link as LinkIcon, Camera, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../../../api/api';
 
 /* ─── UI HELPERS ─── */
@@ -141,11 +142,27 @@ export default function RestaurantSetupPage() {
   /* ── Validation ── */
   const validateStep1 = () => {
     const e = {};
-    if (!formData.restaurantName.trim()) e.restaurantName = 'Required';
-    if (!formData.phone.trim())          e.phone          = 'Required';
-    if (!formData.address.trim())        e.address        = 'Required';
+    if (formData.restaurantName.trim().length < 2) e.restaurantName = 'Must be at least 2 characters';
+    
+    if (!/^\+?[1-9]\d{9,14}$/.test(formData.phone)) e.phone = 'Enter a valid phone number (e.g., +919876543210)';
+    
+    if (!formData.address.trim()) e.address = 'Required';
+    
+    if (formData.mapsLink && !/^https?:\/\/.+/.test(formData.mapsLink)) e.mapsLink = 'Enter a valid URL starting with http:// or https://';
+    if (formData.instagram && !/^https?:\/\/.+/.test(formData.instagram)) e.instagram = 'Enter a valid URL starting with http:// or https://';
+    if (formData.facebook && !/^https?:\/\/.+/.test(formData.facebook)) e.facebook = 'Enter a valid URL starting with http:// or https://';
+
+    if (formData.openingTime && formData.closingTime) {
+      if (formData.closingTime <= formData.openingTime) {
+        e.closingTime = 'Must be after opening time';
+      }
+    }
+
     if (!formData.coverImage && !formData.coverImageUrl) e.coverImage = 'Cover image is required';
     setErrors(e);
+    if (Object.keys(e).length > 0) {
+      toast.error("Please fill in all required fields.", { id: 'setup-step1-error' });
+    }
     return Object.keys(e).length === 0;
   };
 
@@ -153,14 +170,17 @@ export default function RestaurantSetupPage() {
     let valid = true;
     const e = {};
     formData.categories.forEach(cat => {
-      if (!cat.name.trim()) { valid = false; e[`cat_${cat.id}`] = 'Required'; }
+      if (cat.name.trim().length < 2) { valid = false; e[`cat_${cat.id}`] = 'Min 2 characters'; }
       cat.items.forEach(item => {
-        if (!item.name.trim()) { valid = false; e[`item_name_${item.id}`] = 'Required'; }
-        if (!item.price)       { valid = false; e[`item_price_${item.id}`] = 'Required'; }
+        if (item.name.trim().length < 2) { valid = false; e[`item_name_${item.id}`] = 'Min 2 characters'; }
+        if (!item.price || Number(item.price) <= 0) { valid = false; e[`item_price_${item.id}`] = 'Must be > 0'; }
         if (!item.imageFile && !item.imageUrl) { valid = false; e[`item_image_${item.id}`] = 'Image required'; }
       });
     });
     setErrors(e);
+    if (!valid) {
+      toast.error("Please ensure all categories and items have required details.", { id: 'setup-step2-error' });
+    }
     return valid;
   };
 
@@ -293,6 +313,7 @@ export default function RestaurantSetupPage() {
         <div className="relative pb-4">
           <InputLabel title="Google Maps Link" />
           <input type="url" name="mapsLink" placeholder="https://maps.google.com/..." className={baseInputClass} value={formData.mapsLink} onChange={handleChange} />
+          <ErrorText msg={errors.mapsLink} />
         </div>
       </SectionContainer>
 
@@ -307,6 +328,7 @@ export default function RestaurantSetupPage() {
             <div className="flex-1 relative pb-4">
               <InputLabel title="Closes At" />
               <input type="time" name="closingTime" className={baseInputClass} value={formData.closingTime} onChange={handleChange} />
+              <ErrorText msg={errors.closingTime} />
             </div>
           </div>
         </SectionContainer>
@@ -316,10 +338,12 @@ export default function RestaurantSetupPage() {
             <div className="relative pb-4 flex items-end gap-3">
               <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">IG</span>
               <input type="url" name="instagram" placeholder="Instagram Profile" className={`${baseInputClass} flex-1`} value={formData.instagram} onChange={handleChange} />
+              <ErrorText msg={errors.instagram} />
             </div>
             <div className="relative pb-4 flex items-end gap-3">
               <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">FB</span>
               <input type="url" name="facebook" placeholder="Facebook Profile" className={`${baseInputClass} flex-1`} value={formData.facebook} onChange={handleChange} />
+              <ErrorText msg={errors.facebook} />
             </div>
           </div>
         </SectionContainer>

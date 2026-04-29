@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../api/api';
+import toast from 'react-hot-toast';
 import {
   Plus, Pencil, Trash2, Eye, QrCode, Download, CheckCircle2, AlertTriangle,
   ChefHat, LogOut, FolderPlus, ArrowUpRight, Layers, ToggleLeft, ToggleRight,
@@ -131,10 +132,25 @@ function RestaurantInfoForm({ data, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!form.name.trim())    errs.name    = 'Required';
-    if (!form.phone.trim())   errs.phone   = 'Required';
+    if (form.name.trim().length < 2) errs.name = 'Must be at least 2 characters';
+    if (!/^\+?[1-9]\d{9,14}$/.test(form.phone)) errs.phone = 'Enter a valid phone number';
     if (!form.address.trim()) errs.address = 'Required';
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    
+    if (form.maps_link && !/^https?:\/\/.+/.test(form.maps_link)) errs.maps_link = 'Enter a valid URL';
+    if (form.instagram && !/^https?:\/\/.+/.test(form.instagram)) errs.instagram = 'Enter a valid URL';
+    if (form.facebook && !/^https?:\/\/.+/.test(form.facebook)) errs.facebook = 'Enter a valid URL';
+
+    if (form.opening_time && form.closing_time) {
+      if (form.closing_time <= form.opening_time) {
+        errs.closing_time = 'Must be after opening time';
+      }
+    }
+
+    if (Object.keys(errs).length) { 
+      setErrors(errs); 
+      toast.error("Please fix the validation errors.");
+      return; 
+    }
 
     setLoading(true);
     const fd = new FormData();
@@ -143,6 +159,7 @@ function RestaurantInfoForm({ data, onSuccess }) {
 
     try {
       const res = await api.patch('/restaurant/info/', fd);
+      toast.success("Restaurant info updated successfully!");
       onSuccess(res.data);
     } catch (err) {
       console.error(err.response?.data);
@@ -231,7 +248,11 @@ function CategoryForm({ data, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) { setError('Name is required'); return; }
+    if (name.trim().length < 2) { 
+      setError('Category name must be at least 2 characters'); 
+      toast.error("Category name must be at least 2 characters.");
+      return; 
+    }
     setLoading(true);
     try {
       let res;
@@ -240,6 +261,7 @@ function CategoryForm({ data, onSuccess }) {
       } else {
         res = await api.post('/restaurant/categories/', { name });
       }
+      toast.success(isEdit ? "Category updated!" : "Category created!");
       onSuccess(res.data, isEdit);
     } catch (err) {
       setError(err.response?.data?.name?.[0] || 'Something went wrong');
@@ -289,11 +311,15 @@ function MenuItemForm({ data, allCats, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!form.name.trim())    errs.name       = 'Required';
-    if (!form.price)          errs.price      = 'Required';
-    if (!form.categoryId)     errs.categoryId = 'Required';
+    if (form.name.trim().length < 2) errs.name = 'Must be at least 2 characters';
+    if (!form.price || Number(form.price) <= 0) errs.price = 'Must be > 0';
+    if (!form.categoryId) errs.categoryId = 'Required';
     if (!isEdit && !imageFile) errs.image = 'Image is required for new items';
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) { 
+      setErrors(errs); 
+      toast.error("Please fix the validation errors.");
+      return; 
+    }
 
     setLoading(true);
     const fd = new FormData();
@@ -311,6 +337,7 @@ function MenuItemForm({ data, allCats, onSuccess }) {
       } else {
         res = await api.post('/restaurant/items/', fd);
       }
+      toast.success(isEdit ? "Menu item updated!" : "Menu item added!");
       onSuccess(res.data, isEdit);
     } catch (err) {
       console.error(err.response?.data);
@@ -393,23 +420,23 @@ export default function DashboardPage() {
 
   // ── Remote data
   const [restaurant, setRestaurant] = useState(null);
-  const [allItems, setAllItems]     = useState([]);
-  const [allCats, setAllCats]       = useState([]);
-  const [stats, setStats]           = useState({});
-  const [steps, setSteps]           = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
+  const [allItems, setAllItems] = useState([]);
+  const [allCats, setAllCats] = useState([]);
+  const [stats, setStats] = useState({});
+  const [steps, setSteps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ── UI
-  const [copied, setCopied]         = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
-  const [showAllCats, setShowAllCats]   = useState(false);
+  const [showAllCats, setShowAllCats] = useState(false);
   const [itemStatuses, setItemStatuses] = useState({});
 
   // ── Drawer
   const [modal, setModal] = useState({ open: false, type: null, data: null });
-  const openModal  = (type, data = null) => setModal({ open: true, type, data });
-  const closeModal = ()                  => setModal({ open: false, type: null, data: null });
+  const openModal = (type, data = null) => setModal({ open: true, type, data });
+  const closeModal = () => setModal({ open: false, type: null, data: null });
 
   // ── Confirm dialog
   const [confirmDlg, setConfirmDlg] = useState({ open: false, title: '', message: '', action: null, confirmText: 'Delete', type: 'danger' });
@@ -436,8 +463,7 @@ export default function DashboardPage() {
       setSteps(d.setupSteps);
       setItemStatuses(Object.fromEntries(d.items.map(i => [i.id, i.status])));
     } catch (err) {
-      if (err.response?.status === 404) navigate('/restaurant/setup');
-      else setError('Failed to load dashboard.');
+      setError('Failed to load dashboard.');
     } finally {
       setLoading(false);
     }
@@ -452,9 +478,9 @@ export default function DashboardPage() {
     try {
       const res = await api.patch(`/restaurant/items/${id}/toggle/`);
       const isAvailable = res.data.isAvailable;
-      
+
       setAllItems(items => items.map(i => i.id === id ? { ...i, status: isAvailable } : i));
-      
+
       // Update counts
       setStats(s => ({
         ...s,
@@ -484,21 +510,21 @@ export default function DashboardPage() {
       'Delete Category',
       'This will permanently delete the category and all menu items inside it.',
       async () => {
-    try {
-      const res = await api.delete(`/restaurant/categories/${catId}/`);
-      const deletedItemIds = allItems.filter(i => i.catId === catId).map(i => i.id);
-      setAllCats(c => c.filter(c => c.id !== catId));
-      setAllItems(items => items.filter(i => i.catId !== catId));
-      setStats(s => ({
-        ...s,
-        totalCategories: s.totalCategories - 1,
-        totalItems: s.totalItems - deletedItemIds.length,
-        availableItems: s.availableItems - deletedItemIds.filter(id => itemStatuses[id]).length,
-      }));
-      if (res.data?.setupComplete !== undefined)
-        setRestaurant(r => ({ ...r, setupComplete: res.data.setupComplete }));
-      } catch (err) { alert('Failed to delete category.'); }
-    });
+        try {
+          const res = await api.delete(`/restaurant/categories/${catId}/`);
+          const deletedItemIds = allItems.filter(i => i.catId === catId).map(i => i.id);
+          setAllCats(c => c.filter(c => c.id !== catId));
+          setAllItems(items => items.filter(i => i.catId !== catId));
+          setStats(s => ({
+            ...s,
+            totalCategories: s.totalCategories - 1,
+            totalItems: s.totalItems - deletedItemIds.length,
+            availableItems: s.availableItems - deletedItemIds.filter(id => itemStatuses[id]).length,
+          }));
+          if (res.data?.setupComplete !== undefined)
+            setRestaurant(r => ({ ...r, setupComplete: res.data.setupComplete }));
+        } catch (err) { alert('Failed to delete category.'); }
+      });
   };
 
   const deleteItem = (itemId) => {
@@ -506,21 +532,21 @@ export default function DashboardPage() {
       'Delete Menu Item',
       'This item will be permanently removed from your menu.',
       async () => {
-    const item = allItems.find(i => i.id === itemId);
-    try {
-      const res = await api.delete(`/restaurant/items/${itemId}/`);
-      setAllItems(items => items.filter(i => i.id !== itemId));
-      setAllCats(cats => cats.map(c => c.id === item?.catId ? { ...c, count: Math.max(0, c.count - 1) } : c));
-      setStats(s => ({
-        ...s,
-        totalItems: s.totalItems - 1,
-        availableItems: item?.status ? s.availableItems - 1 : s.availableItems,
-        unavailableItems: !item?.status ? s.unavailableItems - 1 : s.unavailableItems,
-      }));
-      if (res.data?.setupComplete !== undefined)
-        setRestaurant(r => ({ ...r, setupComplete: res.data.setupComplete }));
-      } catch { alert('Failed to delete item.'); }
-    });
+        const item = allItems.find(i => i.id === itemId);
+        try {
+          const res = await api.delete(`/restaurant/items/${itemId}/`);
+          setAllItems(items => items.filter(i => i.id !== itemId));
+          setAllCats(cats => cats.map(c => c.id === item?.catId ? { ...c, count: Math.max(0, c.count - 1) } : c));
+          setStats(s => ({
+            ...s,
+            totalItems: s.totalItems - 1,
+            availableItems: item?.status ? s.availableItems - 1 : s.availableItems,
+            unavailableItems: !item?.status ? s.unavailableItems - 1 : s.unavailableItems,
+          }));
+          if (res.data?.setupComplete !== undefined)
+            setRestaurant(r => ({ ...r, setupComplete: res.data.setupComplete }));
+        } catch { alert('Failed to delete item.'); }
+      });
   };
 
   // ── Modal success callbacks
@@ -568,8 +594,8 @@ export default function DashboardPage() {
       : (modal.data?.id ? 'Edit Menu Item' : 'Add Menu Item');
 
   const visibleItems = showAllItems ? allItems : allItems.slice(0, LIMIT);
-  const visibleCats  = showAllCats  ? allCats  : allCats.slice(0, LIMIT);
-  const progress     = steps.length ? Math.round((steps.filter(s => s.done).length / steps.length) * 100) : 0;
+  const visibleCats = showAllCats ? allCats : allCats.slice(0, LIMIT);
+  const progress = steps.length ? Math.round((steps.filter(s => s.done).length / steps.length) * 100) : 0;
 
   /* LOADING */
   if (loading) return (
@@ -622,7 +648,7 @@ export default function DashboardPage() {
       {/* ── SUBSCRIPTION OVERLAY ── */}
       {!restaurant?.isSubscribed && (
         <div className="fixed inset-x-0 bottom-0 top-14 z-20 overflow-hidden bg-gray-50/80 backdrop-blur-[2px] flex items-center justify-center p-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-gray-100 p-10 text-center relative overflow-hidden"
@@ -637,14 +663,14 @@ export default function DashboardPage() {
                 <AlertCircle size={14} className="text-orange-500" />
               </div>
             </div>
-            
+
             <h2 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Activate your Dashboard</h2>
             <p className="text-sm text-gray-500 leading-relaxed mb-8">
               Your restaurant setup is saved, but you need an active subscription to access analytics, menu management, and public publishing.
             </p>
-            
+
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={() => navigate('/restaurant/subscription')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-orange-100 active:scale-95 flex items-center justify-center gap-2"
               >
@@ -731,10 +757,10 @@ export default function DashboardPage() {
         {/* ── STATS ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Categories',  value: stats.totalCategories  ?? 0, icon: Layers,          sub: 'menu sections'         },
-            { label: 'Total Items', value: stats.totalItems        ?? 0, icon: UtensilsCrossed, sub: 'dishes & drinks'       },
-            { label: 'Available',   value: stats.availableItems   ?? 0, icon: ToggleRight,     sub: 'live on menu'          },
-            { label: 'Off Menu',    value: stats.unavailableItems ?? 0, icon: ToggleLeft,      sub: 'hidden from customers' },
+            { label: 'Categories', value: stats.totalCategories ?? 0, icon: Layers, sub: 'menu sections' },
+            { label: 'Total Items', value: stats.totalItems ?? 0, icon: UtensilsCrossed, sub: 'dishes & drinks' },
+            { label: 'Available', value: stats.availableItems ?? 0, icon: ToggleRight, sub: 'live on menu' },
+            { label: 'Off Menu', value: stats.unavailableItems ?? 0, icon: ToggleLeft, sub: 'hidden from customers' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="flex items-start justify-between">
@@ -762,11 +788,11 @@ export default function DashboardPage() {
             </div>
             <div className="divide-y divide-gray-50">
               {[
-                { label: 'Add Menu Item',    sub: 'New dish or drink',    icon: Plus,       color: 'bg-orange-50 text-orange-500', action: () => openModal('item') },
-                { label: 'Add Category',     sub: 'Group your dishes',    icon: FolderPlus, color: 'bg-violet-50 text-violet-500', action: () => openModal('category') },
-                { label: 'Edit Restaurant',  sub: 'Info, hours, contact', icon: Pencil,     color: 'bg-blue-50 text-blue-500',    action: () => openModal('info', restaurant) },
-                { label: 'View Live Menu',   sub: 'See as a customer',    icon: Eye,        color: 'bg-emerald-50 text-emerald-500', action: () => {} },
-                { label: 'Download QR Code', sub: 'Print for tables',     icon: QrCode,     color: 'bg-rose-50 text-rose-500',    action: () => {} },
+                { label: 'Add Menu Item', sub: 'New dish or drink', icon: Plus, color: 'bg-orange-50 text-orange-500', action: () => openModal('item') },
+                { label: 'Add Category', sub: 'Group your dishes', icon: FolderPlus, color: 'bg-violet-50 text-violet-500', action: () => openModal('category') },
+                { label: 'Edit Restaurant', sub: 'Info, hours, contact', icon: Pencil, color: 'bg-blue-50 text-blue-500', action: () => openModal('info', restaurant) },
+                { label: 'View Live Menu', sub: 'See as a customer', icon: Eye, color: 'bg-emerald-50 text-emerald-500', action: () => { } },
+                { label: 'Download QR Code', sub: 'Print for tables', icon: QrCode, color: 'bg-rose-50 text-rose-500', action: () => { } },
               ].map(a => (
                 <button key={a.label} onClick={a.action} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors group text-left">
                   <div className={`w-8 h-8 rounded-xl ${a.color} grid place-items-center flex-shrink-0`}>
@@ -801,10 +827,10 @@ export default function DashboardPage() {
             )}
             <div className="px-5 py-4 space-y-3">
               {[
-                { icon: Phone,   label: restaurant?.phone   || '—' },
-                { icon: MapPin,  label: restaurant?.address || '—' },
-                { icon: Clock,   label: restaurant?.openingTime && restaurant?.closingTime ? `${restaurant.openingTime} - ${restaurant.closingTime}` : '—' },
-                { icon: Globe,   label: restaurant?.menuUrl || '—' },
+                { icon: Phone, label: restaurant?.phone || '—' },
+                { icon: MapPin, label: restaurant?.address || '—' },
+                { icon: Clock, label: restaurant?.openingTime && restaurant?.closingTime ? `${restaurant.openingTime} - ${restaurant.closingTime}` : '—' },
+                { icon: Globe, label: restaurant?.menuUrl || '—' },
               ].filter(row => row.label).map((row, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <row.icon size={13} className="text-gray-300 mt-0.5 flex-shrink-0" />

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../store/authSlice';
 import { useAuth } from '../../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,11 +28,13 @@ const LoginPage = () => {
         
         // Once successfully logged in via Redux, store the authenticated user in our Context
         if (response && response.user) {
+            toast.success("Successfully logged in!");
             loginContext(response.user);
             navigate('/dashboard');
         }
     } catch (err) {
         // Error is caught by Redux and stored in auth state
+        toast.error(err.detail || err.message || "Invalid credentials");
     } finally {
         setIsLoggingIn(false);
     }
@@ -55,13 +58,6 @@ const LoginPage = () => {
         <div className="bg-white/70 backdrop-blur-xl border border-white/60 p-7 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
           <form onSubmit={handleSubmit} className="space-y-4">
           
-            {/* Global Error Message */}
-            {error && error.detail && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold">
-                    {error.detail}
-                </div>
-            )}
-
             {/* Interactive Floating Label Input */}
             <div className="relative group">
               <input

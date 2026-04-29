@@ -14,6 +14,32 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+export const verifyOtp = createAsyncThunk(
+  "auth/verifyOtp",
+  async ({email, otp}, thunkAPI) => {
+    try {
+      const response = await api.post("/users/verify-otp/", {email, otp});
+      return response.data;
+    } catch (error) {
+      // Return the backend error messages (e.g. { "username": ["This field is required"] })
+      return thunkAPI.rejectWithValue(error.response?.data || { detail: "Something went wrong" });
+    }
+  }
+);
+
+export const resendOtp = createAsyncThunk(
+  "auth/resendOtp",
+  async ({email}, thunkAPI) => {
+    try {
+      const response = await api.post("/users/resend-otp/", {email});
+      return response.data;
+    } catch (error) {
+      // Return the backend error messages (e.g. { "username": ["This field is required"] })
+      return thunkAPI.rejectWithValue(error.response?.data || { detail: "Something went wrong" });
+    }
+  }
+);
+
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials, thunkAPI) => {

@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from users.serializers import RegisterSerializer
 from django.contrib.auth import get_user_model
+from users.models import EmailOTP
+from users.utils import generate_otp, send_otp_email
 
 User = get_user_model()
 
@@ -14,10 +16,13 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save()
+            user_obj = serializer.save()
+            emailotp = EmailOTP.objects.filter(email=user_obj.email).first()
             return Response({
-                "message": "User registered successfully, please login."
+                "message": "OTP sent. Please verify your account.",
+                "otpExpiry": int((emailotp.created_at.timestamp() + 300) * 1000)
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -160,3 +165,56 @@ class LogoutView(APIView):
         response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'])
         
         return response
+
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+
+        if not email or not otp:
+            return Response({"detail": "Email and OTP are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            otp_obj = EmailOTP.objects.get(email=email)
+        except EmailOTP.DoesNotExist:
+            return Response({"detail": "No OTP found for this email"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not otp_obj.verify_otp(otp):
+            return Response({"detail": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if otp_obj.is_expired():
+            return Response({"detail": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.get(email=email)
+        user.is_active = True
+        user.save()
+
+        otp_obj.delete()
+
+        return Response({"message": "Email verified successfully. You can now login."})
+    
+
+class ResendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+
+        if not email:
+            return Response({"detail": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_obj = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"detail": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        otp = generate_otp()
+        otp_obj, created = EmailOTP.objects.get_or_create(email=email)
+        otp_obj.set_otp(otp)
+        otp_obj.save()
+
+        send_otp_email(email, otp)
+
+        return Response({"message": "OTP resent successfully","otpExpiry": int((otp_obj.created_at.timestamp() + 300) * 1000)})

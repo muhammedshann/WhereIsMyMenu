@@ -2,14 +2,15 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function UserRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
 
   if (user) {
-    return <Navigate to="/dashboard" />;
-  }
-
-  if (user?.is_superuser) {
-    return <Navigate to="/admin" />;
+    if (user.is_superuser || user.is_staff) {
+      return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

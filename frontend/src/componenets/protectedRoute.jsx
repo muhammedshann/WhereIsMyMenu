@@ -10,5 +10,9 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.is_superuser || user.is_staff) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return children;
 }

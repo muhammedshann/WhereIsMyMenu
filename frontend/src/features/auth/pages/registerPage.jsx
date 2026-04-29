@@ -3,6 +3,7 @@ import { Eye, EyeOff, ChefHat, ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, resetAuthState } from '../store/authSlice';
+import toast from 'react-hot-toast';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
@@ -24,11 +25,12 @@ const RegisterPage = () => {
     }, [dispatch]);
 
     // Handle successful registration
-    useEffect(() => {
-        if (success) {
-            navigate('/login'); // Redirect to login since registration doesn't auto-login
-        }
-    }, [success, navigate]);
+    // useEffect(() => {
+    //     if (success) {
+    //         toast.success("Registration successful! Please verify your email.");
+    //         navigate('/otp-verification', { state: { email: formData.email } });
+    //     }
+    // }, [success, navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -42,19 +44,42 @@ const RegisterPage = () => {
         e.preventDefault();
         const newErrors = {};
 
-        // Client-side validation
+        // Client-side validation mirroring backend
+        if (formData.firstName.trim().length < 2 || !/^[a-zA-Z\s\-]+$/.test(formData.firstName)) {
+            newErrors.firstName = "Must be at least 2 characters (letters only)";
+        }
+
+        if (formData.lastName.trim().length < 2 || !/^[a-zA-Z\s\-]+$/.test(formData.lastName)) {
+            newErrors.lastName = "Must be at least 2 characters (letters only)";
+        }
+
+        if (formData.username.length < 4 || formData.username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+            newErrors.username = "4-20 chars (letters, numbers, _ only)";
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = "Please enter a valid email address";
+        }
+
+        if (formData.password.length < 8 || !/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+            newErrors.password = "Min 8 chars, 1 letter, 1 number";
+        }
+
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = "Passwords match failed";
         }
 
         if (Object.keys(newErrors).length > 0) {
             setLocalErrors(newErrors);
+            toast.error("Please fix the errors in the form.", { id: 'register-validation-error' });
             return;
         }
 
         setIsRegistering(true);
         try {
-            await dispatch(registerUser(formData)).unwrap();
+            const response = await dispatch(registerUser(formData)).unwrap();
+            toast.success("Registration successful! Please verify your email.");
+            navigate('/otp-verification', { state: { email: formData.email, otpExpiry: response.otpExpiry } });
         } catch (err) {
             // Error is handled by Redux state, we just need to catch to avoid unhandled promise rejection
         } finally {
@@ -103,6 +128,7 @@ const RegisterPage = () => {
                                 <label className="absolute text-sm text-slate-400 duration-300 transform -translate-y-3 scale-[0.85] top-3.5 z-10 origin-[0] left-3 peer-focus:text-orange-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.85] peer-focus:-translate-y-3 pointer-events-none cursor-text">
                                     First Name
                                 </label>
+                                {getFieldError('firstName') && <p className="mt-1 text-[10px] font-semibold text-rose-500 pl-1">{getFieldError('firstName')}</p>}
                             </div>
                             <div className="relative group">
                                 <input
@@ -114,6 +140,7 @@ const RegisterPage = () => {
                                 <label className="absolute text-sm text-slate-400 duration-300 transform -translate-y-3 scale-[0.85] top-3.5 z-10 origin-[0] left-3 peer-focus:text-orange-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.85] peer-focus:-translate-y-3 pointer-events-none cursor-text">
                                     Last Name
                                 </label>
+                                {getFieldError('lastName') && <p className="mt-1 text-[10px] font-semibold text-rose-500 pl-1">{getFieldError('lastName')}</p>}
                             </div>
                         </div>
 
@@ -148,19 +175,24 @@ const RegisterPage = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="relative group">
-                                <input
-                                    id="password" name="password" type={showPassword ? 'text' : 'password'} required
-                                    value={formData.password} onChange={handleChange}
-                                    className="block pl-3 pr-10 pb-2 pt-5 w-full text-sm text-slate-900 bg-white/80 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 peer transition-all shadow-sm"
-                                    placeholder=" "
-                                />
-                                <label className="absolute text-sm text-slate-400 duration-300 transform -translate-y-3 scale-[0.85] top-3.5 z-10 origin-[0] left-3 peer-focus:text-orange-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.85] peer-focus:-translate-y-3 pointer-events-none cursor-text">
-                                    Password
-                                </label>
-                                <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-orange-500 transition-colors" onClick={() => setShowPassword(!showPassword)}>
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
+                            <div>
+                                <div className="relative group">
+                                    <input
+                                        id="password" name="password" type={showPassword ? 'text' : 'password'} required
+                                        value={formData.password} onChange={handleChange}
+                                        className={`block pl-3 pr-10 pb-2 pt-5 w-full text-sm text-slate-900 bg-white/80 rounded-xl border ${getFieldError('password') ? 'border-rose-300 ring-rose-500/10' : 'border-slate-200 focus:ring-orange-500/20 focus:border-orange-500'} appearance-none focus:outline-none focus:ring-2 transition-all shadow-sm peer`}
+                                        placeholder=" "
+                                    />
+                                    <label className="absolute text-sm text-slate-400 duration-300 transform -translate-y-3 scale-[0.85] top-3.5 z-10 origin-[0] left-3 peer-focus:text-orange-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.85] peer-focus:-translate-y-3 pointer-events-none cursor-text">
+                                        Password
+                                    </label>
+                                    <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-orange-500 transition-colors" onClick={() => setShowPassword(!showPassword)}>
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                                {getFieldError('password') && (
+                                    <p className="mt-1 text-[10px] font-semibold text-rose-500 pl-1">{getFieldError('password')}</p>
+                                )}
                             </div>
 
                             <div>
