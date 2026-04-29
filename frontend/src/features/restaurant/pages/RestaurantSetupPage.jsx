@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Trash2, Plus, ArrowRight, ArrowLeft, Check, ChefHat, Store, Utensils,
-  MapPin, Clock, Link as LinkIcon, Camera, Loader2
+  MapPin, Clock, Link as LinkIcon, Camera, Loader2, LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../api/api';
+import { useAuth } from '../../../context/AuthContext';
 
 /* ─── UI HELPERS ─── */
 const InputLabel = ({ title, required }) => (
@@ -43,6 +44,44 @@ const buildEmpty = () => ({
   categories: [],
 });
 
+function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmText = 'Delete', type = 'danger' }) {
+  const Icon = type === 'danger' ? Trash2 : LogOut;
+  const iconColor = type === 'danger' ? 'text-red-500' : 'text-orange-500';
+  const iconBg = type === 'danger' ? 'bg-red-100' : 'bg-orange-100';
+  const btnColor = type === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-100' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-100';
+
+  return (
+    <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      {/* Dialog */}
+      <div className={`relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all duration-200 ${open ? 'scale-100 translate-y-0' : 'scale-95 translate-y-2'}`}>
+        <div className={`w-12 h-12 ${iconBg} rounded-2xl grid place-items-center mx-auto mb-4`}>
+          <Icon size={20} className={iconColor} />
+        </div>
+        <p className="text-sm font-black text-gray-900 text-center mb-1.5">{title || 'Are you sure?'}</p>
+        {message && <p className="text-xs text-gray-400 text-center mb-5 leading-relaxed">{message}</p>}
+        <div className="flex gap-3 mt-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`flex-1 py-2.5 rounded-xl active:scale-95 text-sm font-bold text-white transition-all shadow-md ${btnColor}`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── MAIN COMPONENT ─── */
 export default function RestaurantSetupPage() {
   const [step, setStep] = useState(1);
@@ -53,6 +92,12 @@ export default function RestaurantSetupPage() {
   const [isExisting, setIsExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { logoutContext } = useAuth();
+
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: '', message: '', action: null, confirmText: 'Delete', type: 'danger' });
+  const askConfirm = (title, message, action, confirmText = 'Delete', type = 'danger') => setConfirmDlg({ open: true, title, message, action, confirmText, type });
+  const handleConfirmOk = () => { confirmDlg.action?.(); setConfirmDlg({ open: false, title: '', message: '', action: null, confirmText: 'Delete', type: 'danger' }); };
+  const handleConfirmCancel = () => setConfirmDlg({ open: false, title: '', message: '', action: null, confirmText: 'Delete', type: 'danger' });
 
   /* ── Prefill from backend on mount ── */
   useEffect(() => {
@@ -63,35 +108,35 @@ export default function RestaurantSetupPage() {
           const d = res.data;
           setFormData({
             restaurantName: d.restaurantName || '',
-            tagline:        d.tagline        || '',
-            description:    d.description    || '',
-            phone:          d.phone          || '',
-            email:          d.email          || '',
-            address:        d.address        || '',
-            mapsLink:       d.mapsLink       || '',
-            openingTime:    d.openingTime    || '',
-            closingTime:    d.closingTime    || '',
-            instagram:      d.instagram      || '',
-            facebook:       d.facebook       || '',
-            coverImage:     null,
-            coverImageUrl:  d.coverImageUrl  || null,
+            tagline: d.tagline || '',
+            description: d.description || '',
+            phone: d.phone || '',
+            email: d.email || '',
+            address: d.address || '',
+            mapsLink: d.mapsLink || '',
+            openingTime: d.openingTime || '',
+            closingTime: d.closingTime || '',
+            instagram: d.instagram || '',
+            facebook: d.facebook || '',
+            coverImage: null,
+            coverImageUrl: d.coverImageUrl || null,
             categories: (d.categories || []).map(cat => ({
-              id:    cat.id,
-              name:  cat.name,
+              id: cat.id,
+              name: cat.name,
               items: (cat.items || []).map(item => ({
-                id:          item.id,
-                name:        item.name,
-                price:       item.price,
+                id: item.id,
+                name: item.name,
+                price: item.price,
                 description: item.description || '',
-                isVeg:       item.isVeg,
-                imageFile:   null,
-                imageUrl:    item.imageUrl || null,
+                isVeg: item.isVeg,
+                imageFile: null,
+                imageUrl: item.imageUrl || null,
               })),
             })),
           });
         }
       })
-      .catch(() => {/* no restaurant yet — fresh form */})
+      .catch(() => {/* no restaurant yet — fresh form */ })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -143,11 +188,11 @@ export default function RestaurantSetupPage() {
   const validateStep1 = () => {
     const e = {};
     if (formData.restaurantName.trim().length < 2) e.restaurantName = 'Must be at least 2 characters';
-    
+
     if (!/^\+?[1-9]\d{9,14}$/.test(formData.phone)) e.phone = 'Enter a valid phone number (e.g., +919876543210)';
-    
+
     if (!formData.address.trim()) e.address = 'Required';
-    
+
     if (formData.mapsLink && !/^https?:\/\/.+/.test(formData.mapsLink)) e.mapsLink = 'Enter a valid URL starting with http:// or https://';
     if (formData.instagram && !/^https?:\/\/.+/.test(formData.instagram)) e.instagram = 'Enter a valid URL starting with http:// or https://';
     if (formData.facebook && !/^https?:\/\/.+/.test(formData.facebook)) e.facebook = 'Enter a valid URL starting with http:// or https://';
@@ -197,16 +242,16 @@ export default function RestaurantSetupPage() {
     const payload = new FormData();
     payload.append('data', JSON.stringify({
       restaurantName: formData.restaurantName,
-      tagline:        formData.tagline,
-      description:    formData.description,
-      phone:          formData.phone,
-      email:          formData.email,
-      address:        formData.address,
-      mapsLink:       formData.mapsLink,
-      openingTime:    formData.openingTime || null,
-      closingTime:    formData.closingTime || null,
-      instagram:      formData.instagram,
-      facebook:       formData.facebook,
+      tagline: formData.tagline,
+      description: formData.description,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      mapsLink: formData.mapsLink,
+      openingTime: formData.openingTime || null,
+      closingTime: formData.closingTime || null,
+      instagram: formData.instagram,
+      facebook: formData.facebook,
       categories: formData.categories.map(c => ({
         id: c.id, name: c.name,
         items: c.items.map(i => ({ id: i.id, name: i.name, description: i.description, price: i.price, isVeg: i.isVeg })),
@@ -498,7 +543,15 @@ export default function RestaurantSetupPage() {
   /* ─── MAIN RENDER ─── */
   return (
     <div className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-orange-200">
-
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        onConfirm={handleConfirmOk}
+        onCancel={handleConfirmCancel}
+        confirmText={confirmDlg.confirmText}
+        type={confirmDlg.type}
+      />
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -520,6 +573,9 @@ export default function RestaurantSetupPage() {
           </div>
           <button onClick={() => navigate('/dashboard')} className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">
             ← Dashboard
+          </button>
+          <button onClick={() => askConfirm('Logout', 'Are you sure you want to logout?', () => { logoutContext(); navigate('/login'); }, 'Logout', 'warning')} className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-500 transition-colors px-2.5 py-2 rounded-xl hover:bg-red-50">
+            <LogOut size={14} /><span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>

@@ -455,6 +455,7 @@ export default function DashboardPage() {
       setLoading(true); setError(null);
       const res = await api.get('/restaurant/dashboard/');
       const d = res.data;
+      console.log("dashboard res", res.data);
       console.log(d);
       setRestaurant(d.restaurant);
       setAllItems(d.items);
