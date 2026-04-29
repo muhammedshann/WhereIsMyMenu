@@ -2,7 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: '/api',
   withCredentials: true,
 });
 
@@ -45,7 +45,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         isRefreshing = false;
         processQueue(refreshError);
-        
+
         // Clear auth state and redirect
         // We can't easily dispatch here without importing store, but redirecting works
         if (window.location.pathname !== '/login') {
@@ -59,13 +59,13 @@ api.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const data = error.response.data;
-      
+
       // Skip 401s here since they are handled for token refreshing above
       // Skip 404s to avoid annoying popups for harmless Not Found checks
       if (status !== 401 && status !== 404) {
-        
+
         let errorMessage = "Something went wrong";
-        
+
         // Extract useful error messages from typical Django REST framework responses
         if (typeof data === 'string') {
           errorMessage = data;
@@ -86,7 +86,7 @@ api.interceptors.response.use(
             }
           }
         }
-        
+
         // Show the toast!
         // We prevent duplicate identical toasts with a specific toast.error id if needed, but default is fine
         toast.error(errorMessage, { id: 'global-api-error' });
