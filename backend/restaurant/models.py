@@ -6,6 +6,7 @@ from datetime import timedelta
 import qrcode
 from io import BytesIO
 from django.core.files import File
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
 User = get_user_model()
 
@@ -29,8 +30,8 @@ class Restaurant(models.Model):
     instagram = models.URLField(blank=True)
     facebook = models.URLField(blank=True)
 
-    cover_image = models.ImageField(upload_to='restaurant_covers/', null=True, blank=True)
-    qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    cover_image = models.ImageField(upload_to='restaurant_covers/', storage=MediaCloudinaryStorage(), null=True, blank=True)
+    qr_code = models.ImageField(upload_to='qr_codes/', storage=MediaCloudinaryStorage(), blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
 
@@ -48,6 +49,7 @@ class Restaurant(models.Model):
         qr.save(buffer, format='PNG')
 
         file_name = f"{self.slug}_qr.png"
+        buffer.seek(0)
         self.qr_code.save(file_name, File(buffer), save=False)
 
         super().save(update_fields=['qr_code'])
@@ -76,7 +78,7 @@ class MenuItem(models.Model):
     is_veg = models.BooleanField(default=True)
     is_available = models.BooleanField(default=True)
 
-    image = models.ImageField(upload_to='menu_items/', null=True, blank=True)
+    image = models.ImageField(upload_to='menu_items/',storage=MediaCloudinaryStorage(), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

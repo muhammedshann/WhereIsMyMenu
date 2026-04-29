@@ -827,8 +827,8 @@ export default function DashboardPage() {
                 <Pencil size={11} /> Edit
               </button>
             </div>
-            {restaurant?.coverImage && (
-              <img src={restaurant.coverImage} alt="Cover" className="w-full h-24 object-cover" />
+            {restaurant?.coverImageUrl && (
+              <img src={restaurant.coverImageUrl} alt="Cover" className="w-full h-24 object-cover" />
             )}
             <div className="px-5 py-4 space-y-3">
               {[

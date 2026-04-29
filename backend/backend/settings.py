@@ -15,7 +15,7 @@ from datetime import timedelta
 
 import dj_database_url
 
-import os
+import os, cloudinary
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',
     'restaurant',
-    'adminPanel',
+    'adminPanel',   
 ]
 
 MIDDLEWARE = [
@@ -197,3 +197,18 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# cloudefair
+INSTALLED_APPS += [
+    'cloudinary',
+    'cloudinary_storage',
+]
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+)
+print("DEFAULT FILE STORAGE:", DEFAULT_FILE_STORAGE)

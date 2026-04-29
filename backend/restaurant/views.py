@@ -51,7 +51,7 @@ def _serialize_item(item, request=None):
         'rawPrice': str(item.price),
         'veg': item.is_veg,
         'status': item.is_available,
-        'imageUrl': (request.build_absolute_uri(item.image.url) if request and item.image and item.image.name else None),
+        'imageUrl': item.image.url if item.image and item.image.name else None,
     }
 
 
@@ -75,7 +75,7 @@ class RestaurantSetupView(APIView):
                     'price': str(item.price),
                     'description': item.description,
                     'isVeg': item.is_veg,
-                    'imageUrl': request.build_absolute_uri(item.image.url) if item.image and item.image.name else None,
+                    'imageUrl': item.image.url if item.image else None,
                 })
             categories_data.append({'id': cat.id, 'name': cat.name, 'items': items_data})
 
@@ -92,8 +92,8 @@ class RestaurantSetupView(APIView):
             'closingTime': str(restaurant.closing_time)[:5] if restaurant.closing_time else '',
             'instagram': restaurant.instagram or '',
             'facebook': restaurant.facebook or '',
-            'coverImageUrl': request.build_absolute_uri(restaurant.cover_image.url) if restaurant.cover_image and restaurant.cover_image.name else None,
-            'QrCodeImageUrl': request.build_absolute_uri(restaurant.qr_code.url) if restaurant.qr_code and restaurant.qr_code.name else None,
+            'coverImageUrl': restaurant.cover_image.url if restaurant.cover_image else None,
+            'QrCodeImageUrl': restaurant.qr_code.url if restaurant.qr_code else None,
             'categories': categories_data,
         })
 
@@ -231,6 +231,7 @@ class RestaurantInfoUpdateView(APIView):
             restaurant.email = request.data['email'] or None
         if 'cover_image' in request.FILES:
             restaurant.cover_image = request.FILES['cover_image']
+        
 
         restaurant.save()
         return Response({
@@ -425,8 +426,8 @@ class RestaurantDashboardView(APIView):
                 'instagram': restaurant.instagram or '', 'facebook': restaurant.facebook or '',
                 'openingTime': str(restaurant.opening_time)[:5] if restaurant.opening_time else '',
                 'closingTime': str(restaurant.closing_time)[:5] if restaurant.closing_time else '',
-                'coverImage': request.build_absolute_uri(restaurant.cover_image.url) if restaurant.cover_image and restaurant.cover_image.name else None,
-                'QrCodeImageUrl': request.build_absolute_uri(restaurant.qr_code.url) if restaurant.qr_code and restaurant.qr_code.name else None,
+                'coverImageUrl': restaurant.cover_image.url if restaurant.cover_image else None,
+                'QrCodeImageUrl': restaurant.qr_code.url if restaurant.qr_code else None,
             },
             'setupSteps': setup_steps,
             'stats': {
@@ -490,7 +491,7 @@ class PublicMenuView(APIView):
                 'closingTime': str(restaurant.closing_time)[:5] if restaurant.closing_time else '',
                 'instagram': restaurant.instagram or '',
                 'facebook': restaurant.facebook or '',
-                'coverImage': request.build_absolute_uri(restaurant.cover_image.url) if restaurant.cover_image and restaurant.cover_image.name else None,
+                'coverImage': restaurant.cover_image.url if restaurant.cover_image and restaurant.cover_image.name else None,
                 'isSubscribed': restaurant.owner.subscription.is_valid() if hasattr(restaurant.owner, 'subscription') else False
             },
             'categories': categories_data if (hasattr(restaurant.owner, 'subscription') and restaurant.owner.subscription.is_valid()) else [],
