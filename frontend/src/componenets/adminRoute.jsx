@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth();
+  console.log(user);
 
   if (loading) return null;
 
@@ -10,7 +11,7 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.is_superuser) {
+  if (!user.isSuperuser) {
     return <Navigate to="/dashboard" replace />;
   }
 
